@@ -1,23 +1,15 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { ProjectProvider } from './context/ProjectContext';
-import { LeadProvider } from './context/LeadContext';
-import { PortfolioProvider } from './context/PortfolioContext';
-import { ClientAccountsProvider } from './context/ClientAccountsContext';
-import { ReviewProvider } from './context/ReviewContext';
 import { ToastProvider } from './context/ToastContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import AdminLayout from './components/AdminLayout';
-import ScrollProgress from './components/ScrollProgress';
-import BackToTop from './components/BackToTop';
 import Home from './pages/Home';
 import Services from './pages/Services';
 import Portfolio from './pages/Portfolio';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
+import AdminDashboard from './pages/AdminDashboard';
 import ClientPortal from './pages/ClientPortal';
 import NotFound from './pages/NotFound';
 
@@ -35,76 +27,43 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; role: 'admin' | 'cli
   return <>{children}</>;
 };
 
-// Public layout with Navbar and Footer
 const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="flex flex-col min-h-screen">
-    <ScrollProgress />
     <Navbar />
     <main className="flex-1">
       {children}
     </main>
     <Footer />
-    <BackToTop />
   </div>
 );
-
-const AppRoutes: React.FC = () => {
-  const location = useLocation();
-  
-  return (
-    <Routes location={location} key={location.pathname}>
-      {/* Public Routes */}
-      <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
-      <Route path="/services" element={<PublicLayout><Services /></PublicLayout>} />
-      <Route path="/portfolio" element={<PublicLayout><Portfolio /></PublicLayout>} />
-      <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
-      <Route path="/login" element={<PublicLayout><Login /></PublicLayout>} />
-      
-      {/* Client Portal */}
-      <Route path="/client-portal" element={
-        <ProtectedRoute role="client">
-          <ClientPortal />
-        </ProtectedRoute>
-      } />
-      
-      {/* Admin Routes */}
-      <Route path="/admin/*" element={
-        <ProtectedRoute role="admin">
-          <AdminLayout />
-        </ProtectedRoute>
-      } />
-      
-      {/* 404 */}
-      <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
-    </Routes>
-  );
-};
-
-const AppContent: React.FC = () => {
-  return (
-    <Router>
-      <AnimatePresence mode="wait">
-        <AppRoutes />
-      </AnimatePresence>
-    </Router>
-  );
-};
 
 function App() {
   return (
     <ToastProvider>
       <AuthProvider>
-        <ClientAccountsProvider>
-          <ProjectProvider>
-            <LeadProvider>
-              <PortfolioProvider>
-                <ReviewProvider>
-                  <AppContent />
-                </ReviewProvider>
-              </PortfolioProvider>
-            </LeadProvider>
-          </ProjectProvider>
-        </ClientAccountsProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
+            <Route path="/services" element={<PublicLayout><Services /></PublicLayout>} />
+            <Route path="/portfolio" element={<PublicLayout><Portfolio /></PublicLayout>} />
+            <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
+            <Route path="/login" element={<PublicLayout><Login /></PublicLayout>} />
+            
+            <Route path="/client-portal" element={
+              <ProtectedRoute role="client">
+                <ClientPortal />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin" element={
+              <ProtectedRoute role="admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
+          </Routes>
+        </Router>
       </AuthProvider>
     </ToastProvider>
   );
