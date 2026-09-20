@@ -8,6 +8,7 @@ export interface ClientAccount {
   company: string;
   phone: string;
   status: 'active' | 'inactive';
+  notes?: string;
   createdAt: string;
 }
 

@@ -8,12 +8,12 @@ import { PortfolioProvider } from './context/PortfolioContext';
 import { ClientAccountsProvider } from './context/ClientAccountsContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import AdminLayout from './components/AdminLayout';
 import Home from './pages/Home';
 import Services from './pages/Services';
 import Portfolio from './pages/Portfolio';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
-import AdminDashboard from './pages/AdminDashboard';
 import ClientPortal from './pages/ClientPortal';
 import NotFound from './pages/NotFound';
 
@@ -63,12 +63,11 @@ function App() {
                       </ProtectedRoute>
                     } />
                     
-                    <Route path="/admin" element={
-                      <ProtectedRoute role="admin">
-                        <AdminDashboard />
-                      </ProtectedRoute>
-                    } />
-                    
+            <Route path="/admin/*" element={
+              <ProtectedRoute role="admin">
+                <AdminLayout />
+              </ProtectedRoute>
+            } />                    
                     <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
                   </Routes>
                 </Router>

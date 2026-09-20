@@ -12,6 +12,7 @@ export interface Project {
   category: string;
   priority: 'low' | 'medium' | 'high';
   progress: number;
+  notes?: string;
   createdAt: string;
 }
 

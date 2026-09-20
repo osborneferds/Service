@@ -17,6 +17,7 @@ interface LeadContextType {
   leads: Lead[];
   addLead: (lead: Omit<Lead, 'id' | 'createdAt'>) => void;
   updateLead: (id: string, updates: Partial<Lead>) => void;
+  updateLeadStatus: (id: string, status: Lead['status']) => void;
   deleteLead: (id: string) => void;
 }
 
@@ -47,6 +48,10 @@ export const LeadProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     saveLeads(updated);
   };
 
+  const updateLeadStatus = (id: string, status: Lead['status']) => {
+    updateLead(id, { status });
+  };
+
   const deleteLead = (id: string) => {
     saveLeads(leads.filter(l => l.id !== id));
   };
@@ -56,6 +61,7 @@ export const LeadProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       leads,
       addLead,
       updateLead,
+      updateLeadStatus,
       deleteLead,
     }}>
       {children}
