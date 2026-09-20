@@ -6,6 +6,9 @@ import { ProjectProvider } from './context/ProjectContext';
 import { LeadProvider } from './context/LeadContext';
 import { PortfolioProvider } from './context/PortfolioContext';
 import { ClientAccountsProvider } from './context/ClientAccountsContext';
+import { NotificationProvider } from './context/NotificationContext';
+import { MessageProvider } from './context/MessageContext';
+import { InvoiceProvider } from './context/InvoiceContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AdminLayout from './components/AdminLayout';
@@ -46,37 +49,43 @@ function App() {
   return (
     <ToastProvider>
       <AuthProvider>
-        <ClientAccountsProvider>
-          <ProjectProvider>
-            <LeadProvider>
-              <PortfolioProvider>
-                <Router>
-                  <Routes>
-                    <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
-                    <Route path="/services" element={<PublicLayout><Services /></PublicLayout>} />
-                    <Route path="/portfolio" element={<PublicLayout><Portfolio /></PublicLayout>} />
-                    <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
-                    <Route path="/login" element={<PublicLayout><Login /></PublicLayout>} />
-                    
-                    <Route path="/client-portal" element={
-                      <ProtectedRoute role="client">
-                        <ClientPortal />
-                      </ProtectedRoute>
-                    } />
-                    
-            <Route path="/admin/*" element={
-              <ProtectedRoute role="admin">
-                <AdminLayout />
-              </ProtectedRoute>
-            } />                    
-                    <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
-                  </Routes>
-                </Router>
-                <Toast />
-              </PortfolioProvider>
-            </LeadProvider>
-          </ProjectProvider>
-        </ClientAccountsProvider>
+        <NotificationProvider>
+          <MessageProvider>
+            <InvoiceProvider>
+              <ClientAccountsProvider>
+                <ProjectProvider>
+                  <LeadProvider>
+                    <PortfolioProvider>
+                      <Router>
+                        <Routes>
+                          <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
+                          <Route path="/services" element={<PublicLayout><Services /></PublicLayout>} />
+                          <Route path="/portfolio" element={<PublicLayout><Portfolio /></PublicLayout>} />
+                          <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
+                          <Route path="/login" element={<PublicLayout><Login /></PublicLayout>} />
+                          
+                          <Route path="/client-portal" element={
+                            <ProtectedRoute role="client">
+                              <ClientPortal />
+                            </ProtectedRoute>
+                          } />
+                          
+                  <Route path="/admin/*" element={
+                    <ProtectedRoute role="admin">
+                      <AdminLayout />
+                    </ProtectedRoute>
+                  } />                    
+                          <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
+                        </Routes>
+                      </Router>
+                      <Toast />
+                    </PortfolioProvider>
+                  </LeadProvider>
+                </ProjectProvider>
+              </ClientAccountsProvider>
+            </InvoiceProvider>
+          </MessageProvider>
+        </NotificationProvider>
       </AuthProvider>
     </ToastProvider>
   );

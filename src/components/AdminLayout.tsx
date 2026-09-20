@@ -4,13 +4,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, UserPlus, FolderKanban, FolderOpen,
   BarChart3, Settings, Menu, X, LogOut, ChevronRight,
-  Bell, Code2, PanelLeftClose, PanelLeft, Building2, Image, Shield, Star
+  Bell, Code2, PanelLeftClose, PanelLeft, Building2, Image, Shield, Star,
+  MessageSquare, DollarSign, TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLeads } from '../context/LeadContext';
 import { useProjects } from '../context/ProjectContext';
 import { usePortfolio } from '../context/PortfolioContext';
 import { useClientAccounts } from '../context/ClientAccountsContext';
+import { useNotifications } from '../context/NotificationContext';
+import { useMessages } from '../context/MessageContext';
 import AdminDashboard from '../pages/admin/Dashboard';
 import AdminLeads from '../pages/admin/Leads';
 import AdminPipeline from '../pages/admin/Pipeline';
@@ -20,6 +23,10 @@ import AdminClientAccounts from '../pages/admin/ClientAccounts';
 import AdminPortfolio from '../pages/admin/PortfolioManagement';
 import AdminAnalytics from '../pages/admin/Analytics';
 import AdminSettings from '../pages/admin/Settings';
+import AdminMessages from '../pages/admin/Messages';
+import AdminInvoices from '../pages/admin/Invoices';
+import AdvancedAnalytics from '../pages/admin/AdvancedAnalytics';
+import NotificationCenter from '../components/NotificationCenter';
 
 const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -31,6 +38,8 @@ const AdminLayout: React.FC = () => {
   const { projects } = useProjects();
   const { portfolioItems } = usePortfolio();
   const { clientAccounts } = useClientAccounts();
+  const { unreadCount } = useNotifications();
+  const { getUnreadCount } = useMessages();
 
   const handleLogout = () => {
     logout();
@@ -42,10 +51,13 @@ const AdminLayout: React.FC = () => {
     { path: '/admin/leads', icon: UserPlus, label: 'Leads', badge: leads.filter(l => l.status === 'new').length.toString() },
     { path: '/admin/pipeline', icon: FolderKanban, label: 'Pipeline', badge: null },
     { path: '/admin/projects', icon: FolderOpen, label: 'Projects', badge: projects.filter(p => p.status === 'in-progress').length.toString() },
+    { path: '/admin/messages', icon: MessageSquare, label: 'Messages', badge: getUnreadCount() > 0 ? getUnreadCount().toString() : null },
+    { path: '/admin/invoices', icon: DollarSign, label: 'Invoices', badge: null },
     { path: '/admin/portfolio', icon: Image, label: 'Portfolio', badge: portfolioItems.length.toString() },
     { path: '/admin/client-accounts', icon: Shield, label: 'Client Accounts', badge: clientAccounts.filter(a => a.status === 'active').length.toString() },
     { path: '/admin/clients', icon: Building2, label: 'Clients', badge: null },
     { path: '/admin/analytics', icon: BarChart3, label: 'Analytics', badge: null },
+    { path: '/admin/advanced-analytics', icon: TrendingUp, label: 'Advanced Analytics', badge: null },
     { path: '/admin/settings', icon: Settings, label: 'Settings', badge: null }
   ];
 
@@ -190,10 +202,7 @@ const AdminLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
-              <Bell className="w-5 h-5 text-gray-600" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
+            <NotificationCenter />
             <div className="hidden sm:flex items-center gap-2 pl-3 border-l border-gray-200">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
                 {user?.name?.split(' ').map(n => n[0]).join('') || 'A'}
@@ -250,10 +259,13 @@ const AdminLayout: React.FC = () => {
               <Route path="leads" element={<AdminLeads />} />
               <Route path="pipeline" element={<AdminPipeline />} />
               <Route path="projects" element={<AdminProjects />} />
+              <Route path="messages" element={<AdminMessages />} />
+              <Route path="invoices" element={<AdminInvoices />} />
               <Route path="portfolio" element={<AdminPortfolio />} />
               <Route path="client-accounts" element={<AdminClientAccounts />} />
               <Route path="clients" element={<AdminClients />} />
               <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="advanced-analytics" element={<AdvancedAnalytics />} />
               <Route path="settings" element={<AdminSettings />} />
             </Routes>
           </div>
