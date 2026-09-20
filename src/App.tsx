@@ -9,6 +9,7 @@ import { ClientAccountsProvider } from './context/ClientAccountsContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AdminLayout from './components/AdminLayout';
+import Toast from './components/Toast';
 import Home from './pages/Home';
 import Services from './pages/Services';
 import Portfolio from './pages/Portfolio';
@@ -71,6 +72,7 @@ function App() {
                     <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
                   </Routes>
                 </Router>
+                <Toast />
               </PortfolioProvider>
             </LeadProvider>
           </ProjectProvider>
