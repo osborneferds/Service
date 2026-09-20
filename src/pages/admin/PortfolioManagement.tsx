@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Trash2, X, Search, Eye, Star, Image as ImageIcon } from 'lucide-react';
 import { usePortfolio, PortfolioItem } from '../../context/PortfolioContext';
 import { useToast } from '../../context/ToastContext';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 const AdminPortfolioManagement: React.FC = () => {
   const { portfolioItems, addPortfolioItem, updatePortfolioItem, deletePortfolioItem } = usePortfolio();
@@ -13,6 +14,7 @@ const AdminPortfolioManagement: React.FC = () => {
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewItem, setPreviewItem] = useState<PortfolioItem | null>(null);
+  const [deletingItem, setDeletingItem] = useState<PortfolioItem | null>(null);
 
   const [formData, setFormData] = useState({
     title: '', category: 'web' as PortfolioItem['category'], description: '',
@@ -121,7 +123,7 @@ const AdminPortfolioManagement: React.FC = () => {
                 <div className="absolute top-3 right-3 flex gap-2">
                   <button onClick={() => { setPreviewItem(item); setShowPreviewModal(true); }} className="p-2 bg-white/90 hover:bg-white rounded-lg text-gray-700 hover:text-indigo-600 transition-all"><Eye className="w-4 h-4" /></button>
                   <button onClick={() => openEditModal(item)} className="p-2 bg-white/90 hover:bg-white rounded-lg text-gray-700 hover:text-blue-600 transition-all"><Edit2 className="w-4 h-4" /></button>
-                  <button onClick={() => { if (confirm('Delete this item?')) { deletePortfolioItem(item.id); addToast('Item deleted', 'info'); } }} className="p-2 bg-white/90 hover:bg-white rounded-lg text-gray-700 hover:text-red-600 transition-all"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => setDeletingItem(item)} className="p-2 bg-white/90 hover:bg-white rounded-lg text-gray-700 hover:text-red-600 transition-all"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
               <div className="p-5">
@@ -195,6 +197,23 @@ const AdminPortfolioManagement: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ConfirmDialog
+        isOpen={deletingItem !== null}
+        onClose={() => setDeletingItem(null)}
+        onConfirm={() => {
+          if (deletingItem) {
+            deletePortfolioItem(deletingItem.id);
+            addToast('Portfolio item deleted', 'info');
+            setDeletingItem(null);
+          }
+        }}
+        title="Delete Portfolio Item"
+        message={`Are you sure you want to delete "${deletingItem?.title}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

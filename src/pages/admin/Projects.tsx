@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Trash2, X, Search, Eye } from 'lucide-react';
 import { useProjects, Project } from '../../context/ProjectContext';
 import { useToast } from '../../context/ToastContext';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 const AdminProjects: React.FC = () => {
   const { projects, addProject, updateProject, deleteProject } = useProjects();
@@ -12,6 +13,7 @@ const AdminProjects: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [viewingProject, setViewingProject] = useState<Project | null>(null);
+  const [deletingProject, setDeletingProject] = useState<Project | null>(null);
 
   const [formData, setFormData] = useState<{
     clientName: string; clientEmail: string; title: string; description: string;
@@ -135,7 +137,7 @@ const AdminProjects: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <button onClick={() => setViewingProject(project)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg"><Eye className="w-4 h-4" /></button>
                       <button onClick={() => openEditModal(project)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => { if (confirm('Delete this project?')) { deleteProject(project.id); addToast('Project deleted', 'info'); } }} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => setDeletingProject(project)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </td>
                 </motion.tr>
@@ -210,6 +212,23 @@ const AdminProjects: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ConfirmDialog
+        isOpen={deletingProject !== null}
+        onClose={() => setDeletingProject(null)}
+        onConfirm={() => {
+          if (deletingProject) {
+            deleteProject(deletingProject.id);
+            addToast('Project deleted', 'info');
+            setDeletingProject(null);
+          }
+        }}
+        title="Delete Project"
+        message={`Are you sure you want to delete "${deletingProject?.title}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

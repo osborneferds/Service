@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Trash2, X, Search } from 'lucide-react';
 import { useLeads, Lead } from '../../context/LeadContext';
 import { useToast } from '../../context/ToastContext';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 const AdminLeads: React.FC = () => {
   const { leads, addLead, updateLead, deleteLead } = useLeads();
@@ -10,6 +11,7 @@ const AdminLeads: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [deletingLead, setDeletingLead] = useState<Lead | null>(null);
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', company: '', source: '',
     status: 'new' as Lead['status'], value: '', notes: ''
@@ -123,7 +125,7 @@ const AdminLeads: React.FC = () => {
                       <button onClick={() => openEditModal(lead)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button onClick={() => { if (confirm('Delete this lead?')) { deleteLead(lead.id); addToast('Lead deleted', 'info'); } }} className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
+                      <button onClick={() => setDeletingLead(lead)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -199,6 +201,23 @@ const AdminLeads: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ConfirmDialog
+        isOpen={deletingLead !== null}
+        onClose={() => setDeletingLead(null)}
+        onConfirm={() => {
+          if (deletingLead) {
+            deleteLead(deletingLead.id);
+            addToast('Lead deleted', 'info');
+            setDeletingLead(null);
+          }
+        }}
+        title="Delete Lead"
+        message={`Are you sure you want to delete "${deletingLead?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };
