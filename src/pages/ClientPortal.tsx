@@ -1,17 +1,32 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FolderOpen, Clock, CheckCircle, LogOut, Calendar, DollarSign, Tag, FileText, X } from 'lucide-react';
+import { 
+  FolderOpen, Clock, CheckCircle, LogOut, Calendar, DollarSign, Tag, FileText, X,
+  MessageSquare, Send, Receipt, Activity, AlertCircle
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useProjects, Project } from '../context/ProjectContext';
+import { useMessages } from '../context/MessageContext';
+import { useInvoices, Invoice } from '../context/InvoiceContext';
 import { useNavigate } from 'react-router-dom';
+
+type TabType = 'projects' | 'messages' | 'invoices' | 'activity';
 
 const ClientPortal: React.FC = () => {
   const { user, logout } = useAuth();
   const { getProjectsByClient } = useProjects();
+  const { conversations, sendMessage, activeConversation, setActiveConversation } = useMessages();
+  const { getInvoicesByClient } = useInvoices();
   const navigate = useNavigate();
+  
+  const [activeTab, setActiveTab] = useState<TabType>('projects');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [messageText, setMessageText] = useState('');
 
   const projects = user ? getProjectsByClient(user.email) : [];
+  const invoices = user ? getInvoicesByClient(user.id) : [];
+  const myConversations = conversations.filter(c => c.participantEmail === user?.email);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -42,38 +57,86 @@ const ClientPortal: React.FC = () => {
     }
   };
 
+  const getInvoiceStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid': return 'bg-green-100 text-green-700 border-green-200';
+      case 'sent': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'overdue': return 'bg-red-100 text-red-700 border-red-200';
+      case 'draft': return 'bg-gray-100 text-gray-700 border-gray-200';
+      case 'cancelled': return 'bg-gray-100 text-gray-500 border-gray-200';
+      default: return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!messageText.trim() || !user || !activeConversation) return;
+
+    sendMessage(
+      activeConversation.participantId,
+      activeConversation.participantName,
+      activeConversation.participantEmail,
+      messageText,
+      user.id,
+      user.name,
+      'client'
+    );
+    setMessageText('');
+  };
+
+  const totalUnreadMessages = myConversations.reduce((sum, c) => sum + c.unreadCount, 0);
+  const pendingInvoices = invoices.filter(inv => inv.status === 'sent' || inv.status === 'overdue');
+  const totalPendingAmount = pendingInvoices.reduce((sum, inv) => sum + inv.total, 0);
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Client Portal</h1>
-            <p className="text-sm text-gray-500">Welcome, {user?.name}</p>
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Client Portal</h1>
+              <p className="text-sm text-gray-500">Welcome back, {user?.name}</p>
+            </div>
+            <button
+              onClick={() => { logout(); navigate('/login'); }}
+              className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
           </div>
-          <button
-            onClick={() => { logout(); navigate('/login'); }}
-            className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            Logout
-          </button>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
           >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-lg bg-blue-500 flex items-center justify-center">
-                <FolderOpen className="w-6 h-6 text-white" />
-              </div>
+            <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center mb-2">
+              <FolderOpen className="w-5 h-5 text-white" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">{projects.length}</p>
-            <p className="text-sm text-gray-500 mt-1">Active Projects</p>
+            <p className="text-2xl font-bold text-gray-900">{projects.length}</p>
+            <p className="text-xs text-gray-500 mt-1">Active Projects</p>
           </motion.div>
 
           <motion.div
@@ -82,15 +145,13 @@ const ClientPortal: React.FC = () => {
             transition={{ delay: 0.1 }}
             className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
           >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-lg bg-green-500 flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-white" />
-              </div>
+            <div className="w-10 h-10 rounded-lg bg-green-500 flex items-center justify-center mb-2">
+              <CheckCircle className="w-5 h-5 text-white" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-2xl font-bold text-gray-900">
               {projects.filter(p => p.status === 'completed').length}
             </p>
-            <p className="text-sm text-gray-500 mt-1">Completed</p>
+            <p className="text-xs text-gray-500 mt-1">Completed</p>
           </motion.div>
 
           <motion.div
@@ -99,121 +160,263 @@ const ClientPortal: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
           >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-lg bg-orange-500 flex items-center justify-center">
-                <Clock className="w-6 h-6 text-white" />
-              </div>
+            <div className="w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center mb-2">
+              <MessageSquare className="w-5 h-5 text-white" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">
-              {projects.filter(p => p.status === 'in-progress').length}
-            </p>
-            <p className="text-sm text-gray-500 mt-1">In Progress</p>
+            <p className="text-2xl font-bold text-gray-900">{totalUnreadMessages}</p>
+            <p className="text-xs text-gray-500 mt-1">Unread Messages</p>
           </motion.div>
-        </div>
 
-        {projects.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center"
+            transition={{ delay: 0.3 }}
+            className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
           >
-            <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <FolderOpen className="w-10 h-10 text-indigo-600" />
+            <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center mb-2">
+              <Receipt className="w-5 h-5 text-white" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">No Projects Yet</h3>
-            <p className="text-gray-600 mb-6">
-              You don't have any active projects at the moment. Projects assigned to you will appear here.
-            </p>
-            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 max-w-md mx-auto">
-              <p className="text-sm text-indigo-900">
-                <strong>Demo Mode:</strong> Login as admin and create a project with your email ({user?.email}) to see it appear here.
-              </p>
-            </div>
+            <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalPendingAmount)}</p>
+            <p className="text-xs text-gray-500 mt-1">Pending Invoices</p>
           </motion.div>
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-            <div className="p-6 border-b border-gray-100">
-              <h2 className="text-lg font-bold text-gray-900">My Projects</h2>
-              <p className="text-sm text-gray-500 mt-1">You have {projects.length} project{projects.length !== 1 ? 's' : ''}</p>
-            </div>
-            <div className="divide-y divide-gray-100">
-              {projects.map((project, index) => (
-                <motion.div
-                  key={project.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="p-6 hover:bg-gray-50 transition-colors cursor-pointer"
-                  onClick={() => setSelectedProject(project)}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(project.status)}`}>
-                          {getStatusIcon(project.status)}
-                          {project.status}
-                        </span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(project.priority)}`}>
-                          {project.priority}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">{project.description}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 mb-4">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="w-4 h-4 text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">Budget</p>
-                        <p className="text-sm font-semibold text-gray-900">{project.budget}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">Timeline</p>
-                        <p className="text-sm font-semibold text-gray-900">{project.timeline}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Tag className="w-4 h-4 text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">Category</p>
-                        <p className="text-sm font-semibold text-gray-900">{project.category}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">Started</p>
-                        <p className="text-sm font-semibold text-gray-900">
-                          {new Date(project.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+        </div>
 
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600">Progress</span>
-                      <span className="text-sm font-medium text-gray-900">{project.progress}%</span>
-                    </div>
-                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${project.progress}%` }}
-                        transition={{ duration: 1, ease: 'easeOut', delay: index * 0.1 }}
-                        className="h-full bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full"
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+        {/* Tab Navigation */}
+        <div className="bg-white rounded-t-xl border border-gray-200 border-b-0">
+          <div className="flex overflow-x-auto">
+            {[
+              { id: 'projects', label: 'Projects', icon: FolderOpen, count: projects.length },
+              { id: 'messages', label: 'Messages', icon: MessageSquare, count: totalUnreadMessages },
+              { id: 'invoices', label: 'Invoices', icon: Receipt, count: pendingInvoices.length },
+              { id: 'activity', label: 'Activity', icon: Activity, count: null },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as TabType)}
+                  className={`flex items-center gap-2 px-6 py-4 font-medium text-sm whitespace-nowrap transition-colors border-b-2 ${
+                    activeTab === tab.id
+                      ? 'border-indigo-600 text-indigo-600'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                  {tab.count !== null && tab.count > 0 && (
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      activeTab === tab.id
+                        ? 'bg-indigo-100 text-indigo-600'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
-        )}
+        </div>
+
+        {/* Tab Content */}
+        <div className="bg-white rounded-b-xl border border-gray-200 border-t-0 p-6">
+          <AnimatePresence mode="wait">
+            {/* Projects Tab */}
+            {activeTab === 'projects' && (
+              <motion.div
+                key="projects"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                {projects.length === 0 ? (
+                  <div className="text-center py-12">
+                    <FolderOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">No Projects Yet</h3>
+                    <p className="text-gray-600">Projects assigned to you will appear here.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {projects.map((project) => (
+                      <div
+                        key={project.id}
+                        onClick={() => setSelectedProject(project)}
+                        className="border border-gray-200 rounded-lg p-6 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
+                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(project.status)}`}>
+                                {getStatusIcon(project.status)}
+                                {project.status}
+                              </span>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(project.priority)}`}>
+                                {project.priority}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600">{project.description}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                          <div>
+                            <p className="text-xs text-gray-500">Budget</p>
+                            <p className="text-sm font-semibold text-gray-900">{project.budget}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Timeline</p>
+                            <p className="text-sm font-semibold text-gray-900">{project.timeline}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Category</p>
+                            <p className="text-sm font-semibold text-gray-900">{project.category}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Progress</p>
+                            <p className="text-sm font-semibold text-gray-900">{project.progress}%</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-4">
+                          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${project.progress}%` }}
+                              transition={{ duration: 1, ease: 'easeOut' }}
+                              className="h-full bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* Messages Tab */}
+            {activeTab === 'messages' && (
+              <motion.div
+                key="messages"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                {myConversations.length === 0 ? (
+                  <div className="text-center py-12">
+                    <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">No Messages Yet</h3>
+                    <p className="text-gray-600">Messages from your project manager will appear here.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {myConversations.map((conversation) => (
+                      <div
+                        key={conversation.id}
+                        onClick={() => setActiveConversation(conversation)}
+                        className="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+                              {conversation.participantName.charAt(0)}
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-gray-900">{conversation.participantName}</h4>
+                              <p className="text-sm text-gray-600 mt-1">{conversation.lastMessage}</p>
+                              <p className="text-xs text-gray-500 mt-1">{formatDate(conversation.lastMessageTime)}</p>
+                            </div>
+                          </div>
+                          {conversation.unreadCount > 0 && (
+                            <span className="px-2 py-1 bg-indigo-600 text-white text-xs font-semibold rounded-full">
+                              {conversation.unreadCount}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* Invoices Tab */}
+            {activeTab === 'invoices' && (
+              <motion.div
+                key="invoices"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                {invoices.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Receipt className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">No Invoices Yet</h3>
+                    <p className="text-gray-600">Invoices will appear here when created.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {invoices.map((invoice) => (
+                      <div
+                        key={invoice.id}
+                        onClick={() => setSelectedInvoice(invoice)}
+                        className="border border-gray-200 rounded-lg p-6 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">{invoice.invoiceNumber}</h3>
+                            <p className="text-sm text-gray-600 mt-1">{invoice.projectName}</p>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getInvoiceStatusColor(invoice.status)}`}>
+                            {invoice.status}
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                          <div>
+                            <p className="text-xs text-gray-500">Amount</p>
+                            <p className="text-lg font-bold text-gray-900">{formatCurrency(invoice.total)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Issue Date</p>
+                            <p className="text-sm font-semibold text-gray-900">{formatDate(invoice.issueDate)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Due Date</p>
+                            <p className="text-sm font-semibold text-gray-900">{formatDate(invoice.dueDate)}</p>
+                          </div>
+                          {invoice.paidDate && (
+                            <div>
+                              <p className="text-xs text-gray-500">Paid Date</p>
+                              <p className="text-sm font-semibold text-green-600">{formatDate(invoice.paidDate)}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* Activity Tab */}
+            {activeTab === 'activity' && (
+              <motion.div
+                key="activity"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                <div className="text-center py-12">
+                  <Activity className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Activity Timeline</h3>
+                  <p className="text-gray-600">Project updates and milestones will appear here.</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Project Detail Modal */}
@@ -244,7 +447,6 @@ const ClientPortal: React.FC = () => {
               </div>
 
               <div className="p-6 space-y-6">
-                {/* Status and Priority */}
                 <div className="flex items-center gap-3">
                   <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium border ${getStatusColor(selectedProject.status)}`}>
                     {getStatusIcon(selectedProject.status)}
@@ -255,13 +457,11 @@ const ClientPortal: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Description */}
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2">Description</h3>
                   <p className="text-gray-600">{selectedProject.description}</p>
                 </div>
 
-                {/* Project Details Grid */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -295,7 +495,6 @@ const ClientPortal: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Progress */}
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-3">Progress</h3>
                   <div className="bg-gray-50 rounded-lg p-4">
@@ -314,7 +513,6 @@ const ClientPortal: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Notes */}
                 {selectedProject.notes && (
                   <div>
                     <h3 className="text-sm font-semibold text-gray-700 mb-2">Notes</h3>
@@ -324,6 +522,194 @@ const ClientPortal: React.FC = () => {
                   </div>
                 )}
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Invoice Detail Modal */}
+      <AnimatePresence>
+        {selectedInvoice && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedInvoice(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900">Invoice {selectedInvoice.invoiceNumber}</h2>
+                <button
+                  onClick={() => setSelectedInvoice(null)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div className="flex items-center justify-between">
+                  <span className={`px-3 py-1.5 rounded-full text-sm font-medium border ${getInvoiceStatusColor(selectedInvoice.status)}`}>
+                    {selectedInvoice.status}
+                  </span>
+                  <p className="text-sm text-gray-500">{formatDate(selectedInvoice.issueDate)}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Project</h3>
+                  <p className="text-lg font-bold text-gray-900">{selectedInvoice.projectName}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Items</h3>
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                          <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Qty</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Rate</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {selectedInvoice.items.map((item, index) => (
+                          <tr key={index}>
+                            <td className="px-4 py-3 text-sm text-gray-900">{item.description}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900 text-center">{item.quantity}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900 text-right">{formatCurrency(item.rate)}</td>
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">{formatCurrency(item.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="font-medium">{formatCurrency(selectedInvoice.subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Tax:</span>
+                    <span className="font-medium">{formatCurrency(selectedInvoice.tax)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold border-t border-gray-300 pt-2">
+                    <span>Total:</span>
+                    <span>{formatCurrency(selectedInvoice.total)}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Issue Date</p>
+                    <p className="text-sm font-semibold text-gray-900">{formatDate(selectedInvoice.issueDate)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Due Date</p>
+                    <p className="text-sm font-semibold text-gray-900">{formatDate(selectedInvoice.dueDate)}</p>
+                  </div>
+                  {selectedInvoice.paidDate && (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Paid Date</p>
+                      <p className="text-sm font-semibold text-green-600">{formatDate(selectedInvoice.paidDate)}</p>
+                    </div>
+                  )}
+                </div>
+
+                {selectedInvoice.notes && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Notes</h3>
+                    <p className="text-sm text-gray-600">{selectedInvoice.notes}</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Message Detail Modal */}
+      <AnimatePresence>
+        {activeConversation && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setActiveConversation(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full h-[80vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="border-b border-gray-200 p-6 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">{activeConversation.participantName}</h2>
+                  <p className="text-sm text-gray-500">{activeConversation.participantEmail}</p>
+                </div>
+                <button
+                  onClick={() => setActiveConversation(null)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {activeConversation.messages.map((message) => {
+                  const isFromAdmin = message.senderRole === 'admin';
+                  return (
+                    <div
+                      key={message.id}
+                      className={`flex ${isFromAdmin ? 'justify-start' : 'justify-end'}`}
+                    >
+                      <div
+                        className={`max-w-[70%] rounded-lg px-4 py-2 ${
+                          isFromAdmin
+                            ? 'bg-gray-100 text-gray-900'
+                            : 'bg-indigo-600 text-white'
+                        }`}
+                      >
+                        <p className="text-sm">{message.content}</p>
+                        <p className={`text-xs mt-1 ${isFromAdmin ? 'text-gray-500' : 'text-indigo-200'}`}>
+                          {formatDate(message.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <form onSubmit={handleSendMessage} className="border-t border-gray-200 p-4">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    placeholder="Type a message..."
+                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!messageText.trim()}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Send className="w-5 h-5" />
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         )}

@@ -50,7 +50,72 @@ export const InvoiceProvider: React.FC<{ children: ReactNode }> = ({ children })
     } catch (error) {
       console.error('Failed to load invoices:', error);
     }
-    return [];
+    
+    // Sample invoices for demo client
+    return [
+      {
+        id: '1',
+        invoiceNumber: 'INV-2024-0001',
+        clientId: '1',
+        clientName: 'John Smith',
+        clientEmail: 'client@demo.com',
+        projectName: 'E-commerce Website Redesign',
+        items: [
+          { description: 'UI/UX Design', quantity: 1, rate: 2500, amount: 2500 },
+          { description: 'Frontend Development', quantity: 1, rate: 3500, amount: 3500 },
+        ],
+        subtotal: 6000,
+        tax: 600,
+        total: 6600,
+        status: 'paid',
+        issueDate: '2024-01-10',
+        dueDate: '2024-01-25',
+        paidDate: '2024-01-20',
+        notes: 'Thank you for your prompt payment!',
+        createdAt: '2024-01-10T00:00:00.000Z',
+      },
+      {
+        id: '2',
+        invoiceNumber: 'INV-2024-0002',
+        clientId: '1',
+        clientName: 'John Smith',
+        clientEmail: 'client@demo.com',
+        projectName: 'Mobile App Development',
+        items: [
+          { description: 'App Development - Phase 1', quantity: 1, rate: 5000, amount: 5000 },
+          { description: 'Testing & QA', quantity: 1, rate: 1500, amount: 1500 },
+        ],
+        subtotal: 6500,
+        tax: 650,
+        total: 7150,
+        status: 'sent',
+        issueDate: '2024-01-25',
+        dueDate: '2024-02-10',
+        notes: 'Payment due within 15 days',
+        createdAt: '2024-01-25T00:00:00.000Z',
+      },
+      {
+        id: '3',
+        invoiceNumber: 'INV-2024-0003',
+        clientId: '1',
+        clientName: 'John Smith',
+        clientEmail: 'client@demo.com',
+        projectName: 'Brand Identity Package',
+        items: [
+          { description: 'Logo Design', quantity: 1, rate: 1500, amount: 1500 },
+          { description: 'Brand Guidelines', quantity: 1, rate: 1000, amount: 1000 },
+          { description: 'Business Card Design', quantity: 1, rate: 500, amount: 500 },
+        ],
+        subtotal: 3000,
+        tax: 300,
+        total: 3300,
+        status: 'paid',
+        issueDate: '2024-01-05',
+        dueDate: '2024-01-20',
+        paidDate: '2024-01-15',
+        createdAt: '2024-01-05T00:00:00.000Z',
+      },
+    ];
   });
 
   const saveInvoices = (items: Invoice[]) => {

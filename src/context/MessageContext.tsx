@@ -46,7 +46,76 @@ export const MessageProvider: React.FC<{ children: ReactNode }> = ({ children })
     } catch (error) {
       console.error('Failed to load messages:', error);
     }
-    return [];
+    
+    // Sample conversations for demo client
+    return [
+      {
+        id: '1',
+        participantId: '1',
+        participantName: 'John Smith',
+        participantEmail: 'client@demo.com',
+        lastMessage: 'Hi! I\'ve completed the initial design mockups. Please review when you have time.',
+        lastMessageTime: '2024-01-28T10:30:00.000Z',
+        unreadCount: 1,
+        messages: [
+          {
+            id: '1',
+            senderId: 'admin',
+            senderName: 'Osborne Fernandes',
+            senderRole: 'admin',
+            recipientId: '1',
+            recipientName: 'John Smith',
+            content: 'Hi John! I\'ve started working on your e-commerce website redesign. I\'ll have the initial mockups ready by Friday.',
+            read: true,
+            createdAt: '2024-01-25T09:00:00.000Z',
+          },
+          {
+            id: '2',
+            senderId: '1',
+            senderName: 'John Smith',
+            senderRole: 'client',
+            recipientId: 'admin',
+            recipientName: 'Osborne Fernandes',
+            content: 'That sounds great! Looking forward to seeing the designs.',
+            read: true,
+            createdAt: '2024-01-25T10:15:00.000Z',
+          },
+          {
+            id: '3',
+            senderId: 'admin',
+            senderName: 'Osborne Fernandes',
+            senderRole: 'admin',
+            recipientId: '1',
+            recipientName: 'John Smith',
+            content: 'Hi! I\'ve completed the initial design mockups. Please review when you have time.',
+            read: false,
+            createdAt: '2024-01-28T10:30:00.000Z',
+          },
+        ],
+      },
+      {
+        id: '2',
+        participantId: '1',
+        participantName: 'John Smith',
+        participantEmail: 'client@demo.com',
+        lastMessage: 'The mobile app development is progressing well. We\'re on track for the deadline.',
+        lastMessageTime: '2024-01-27T14:20:00.000Z',
+        unreadCount: 0,
+        messages: [
+          {
+            id: '4',
+            senderId: 'admin',
+            senderName: 'Osborne Fernandes',
+            senderRole: 'admin',
+            recipientId: '1',
+            recipientName: 'John Smith',
+            content: 'The mobile app development is progressing well. We\'re on track for the deadline.',
+            read: true,
+            createdAt: '2024-01-27T14:20:00.000Z',
+          },
+        ],
+      },
+    ];
   });
 
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
