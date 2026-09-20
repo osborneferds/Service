@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Mail, MapPin, Clock, CheckCircle } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+import { useLeads } from '../context/LeadContext';
 
 const Contact: React.FC = () => {
   const { addToast } = useToast();
+  const { addLead } = useLeads();
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -14,6 +16,19 @@ const Contact: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Add as a lead
+    addLead({
+      name: formData.name,
+      email: formData.email,
+      phone: '',
+      company: '',
+      source: 'Contact Form',
+      status: 'new',
+      value: '',
+      notes: formData.message,
+    });
+    
     setSubmitted(true);
     addToast('Message sent successfully!', 'success');
     setTimeout(() => {

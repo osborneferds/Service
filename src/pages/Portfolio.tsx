@@ -2,53 +2,16 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ExternalLink, Github } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { usePortfolio } from '../context/PortfolioContext';
 
 const Portfolio: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const categories = ['all', 'web', 'design', 'mobile', 'branding'];
-
-  const projects = [
-    {
-      id: 1,
-      title: 'E-commerce Platform',
-      category: 'web',
-      description: 'Full-stack e-commerce solution with React and Node.js',
-      tags: ['React', 'Node.js', 'MongoDB'],
-      image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop',
-      featured: true
-    },
-    {
-      id: 2,
-      title: 'Mobile Banking App',
-      category: 'mobile',
-      description: 'Secure mobile banking application',
-      tags: ['React Native', 'Firebase'],
-      image: 'https://images.unsplash.com/photo-1551650975-1927c0865a5f?w=600&h=400&fit=crop',
-      featured: true
-    },
-    {
-      id: 3,
-      title: 'Brand Identity',
-      category: 'branding',
-      description: 'Complete brand identity for tech startup',
-      tags: ['Logo Design', 'Brand Guide'],
-      image: 'https://images.unsplash.com/photo-1561070791-2526d30994b8?w=600&h=400&fit=crop',
-      featured: false
-    },
-    {
-      id: 4,
-      title: 'Dashboard UI',
-      category: 'design',
-      description: 'Analytics dashboard design',
-      tags: ['UI/UX', 'Figma'],
-      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=400&fit=crop',
-      featured: true
-    },
-  ];
+  const { portfolioItems } = usePortfolio();
 
   const filteredProjects = activeFilter === 'all' 
-    ? projects 
-    : projects.filter(p => p.category === activeFilter);
+    ? portfolioItems 
+    : portfolioItems.filter(p => p.category === activeFilter);
 
   return (
     <div className="min-h-screen pt-16">

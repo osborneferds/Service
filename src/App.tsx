@@ -2,6 +2,10 @@ import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { ProjectProvider } from './context/ProjectContext';
+import { LeadProvider } from './context/LeadContext';
+import { PortfolioProvider } from './context/PortfolioContext';
+import { ClientAccountsProvider } from './context/ClientAccountsContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -41,29 +45,37 @@ function App() {
   return (
     <ToastProvider>
       <AuthProvider>
-        <Router>
-          <Routes>
-            <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
-            <Route path="/services" element={<PublicLayout><Services /></PublicLayout>} />
-            <Route path="/portfolio" element={<PublicLayout><Portfolio /></PublicLayout>} />
-            <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
-            <Route path="/login" element={<PublicLayout><Login /></PublicLayout>} />
-            
-            <Route path="/client-portal" element={
-              <ProtectedRoute role="client">
-                <ClientPortal />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/admin" element={
-              <ProtectedRoute role="admin">
-                <AdminDashboard />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
-          </Routes>
-        </Router>
+        <ClientAccountsProvider>
+          <ProjectProvider>
+            <LeadProvider>
+              <PortfolioProvider>
+                <Router>
+                  <Routes>
+                    <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
+                    <Route path="/services" element={<PublicLayout><Services /></PublicLayout>} />
+                    <Route path="/portfolio" element={<PublicLayout><Portfolio /></PublicLayout>} />
+                    <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
+                    <Route path="/login" element={<PublicLayout><Login /></PublicLayout>} />
+                    
+                    <Route path="/client-portal" element={
+                      <ProtectedRoute role="client">
+                        <ClientPortal />
+                      </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/admin" element={
+                      <ProtectedRoute role="admin">
+                        <AdminDashboard />
+                      </ProtectedRoute>
+                    } />
+                    
+                    <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
+                  </Routes>
+                </Router>
+              </PortfolioProvider>
+            </LeadProvider>
+          </ProjectProvider>
+        </ClientAccountsProvider>
       </AuthProvider>
     </ToastProvider>
   );

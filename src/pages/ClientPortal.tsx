@@ -2,28 +2,15 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { FolderOpen, Clock, CheckCircle, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useProjects } from '../context/ProjectContext';
 import { useNavigate } from 'react-router-dom';
 
 const ClientPortal: React.FC = () => {
   const { user, logout } = useAuth();
+  const { getProjectsByClient } = useProjects();
   const navigate = useNavigate();
 
-  const projects = [
-    {
-      id: 1,
-      title: 'Website Redesign',
-      status: 'in-progress',
-      progress: 65,
-      description: 'Complete website redesign with modern UI/UX',
-    },
-    {
-      id: 2,
-      title: 'Mobile App Development',
-      status: 'pending',
-      progress: 20,
-      description: 'iOS and Android mobile application',
-    },
-  ];
+  const projects = user ? getProjectsByClient(user.email) : [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
