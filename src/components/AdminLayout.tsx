@@ -209,15 +209,13 @@ const AdminLayout: React.FC = () => {
 
       <div className="flex">
         {/* Desktop Sidebar */}
-        <aside
-          className={`
-            hidden lg:block sticky top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200
-            transition-all duration-300 ease-in-out flex-shrink-0
-            ${sidebarOpen ? 'w-64' : 'w-20'}
-          `}
+        <motion.aside
+          animate={{ width: sidebarOpen ? 256 : 80 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+          className="hidden lg:block sticky top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 flex-shrink-0 overflow-hidden"
         >
           <SidebarContent />
-        </aside>
+        </motion.aside>
 
         {/* Mobile Sidebar */}
         <AnimatePresence>
@@ -227,14 +225,15 @@ const AdminLayout: React.FC = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="lg:hidden fixed inset-0 bg-black/50 z-40"
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
                 onClick={() => setMobileMenuOpen(false)}
               />
               <motion.aside
-                initial={{ x: -280 }}
-                animate={{ x: 0 }}
-                exit={{ x: -280 }}
-                transition={{ type: 'tween', duration: 0.3 }}
+                initial={{ x: -280, opacity: 0.8 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: -280, opacity: 0.8 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                 className="lg:hidden fixed left-0 top-0 h-full w-72 bg-white z-50 shadow-2xl"
               >
                 <SidebarContent isMobile={true} />
