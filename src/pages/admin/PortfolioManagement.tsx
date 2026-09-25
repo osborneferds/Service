@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Trash2, X, Search, Eye, Star, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Search, Eye, Star, Image as ImageIcon, Upload, Link as LinkIcon } from 'lucide-react';
 import { usePortfolio, PortfolioItem } from '../../context/PortfolioContext';
 import { useToast } from '../../context/ToastContext';
 import ConfirmDialog from '../../components/ConfirmDialog';
@@ -15,6 +15,9 @@ const AdminPortfolioManagement: React.FC = () => {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewItem, setPreviewItem] = useState<PortfolioItem | null>(null);
   const [deletingItem, setDeletingItem] = useState<PortfolioItem | null>(null);
+  const [imageUploadMode, setImageUploadMode] = useState<'url' | 'file'>('url');
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     title: '', category: 'web' as PortfolioItem['category'], description: '',
@@ -46,7 +49,60 @@ const AdminPortfolioManagement: React.FC = () => {
       addToast('Portfolio item added!', 'success');
     }
     setShowAddModal(false);
+    resetForm();
+  };
+
+  const resetForm = () => {
     setFormData({ title: '', category: 'web', description: '', tags: '', image: '', link: '', featured: false });
+    setImageUploadMode('url');
+    setImagePreview('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      addToast('Please upload an image file', 'error');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      addToast('Image size must be less than 5MB', 'error');
+      return;
+    }
+
+    // Convert to base64
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      setFormData({ ...formData, image: base64 });
+      setImagePreview(base64);
+      addToast('Image uploaded successfully!', 'success');
+    };
+    reader.onerror = () => {
+      addToast('Failed to upload image', 'error');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    setFormData({ ...formData, image: url });
+    setImagePreview(url);
+  };
+
+  const removeImage = () => {
+    setFormData({ ...formData, image: '' });
+    setImagePreview('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const openEditModal = (item: PortfolioItem) => {
@@ -55,6 +111,14 @@ const AdminPortfolioManagement: React.FC = () => {
       title: item.title, category: item.category, description: item.description,
       tags: item.tags.join(', '), image: item.image, link: item.link, featured: item.featured
     });
+    
+    // Detect if image is base64 or URL
+    if (item.image.startsWith('data:image/')) {
+      setImageUploadMode('file');
+    } else {
+      setImageUploadMode('url');
+    }
+    setImagePreview(item.image);
     setShowAddModal(true);
   };
 
@@ -76,7 +140,7 @@ const AdminPortfolioManagement: React.FC = () => {
           <p className="text-gray-600 mt-1">Manage your portfolio projects</p>
         </div>
         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-          onClick={() => { setShowAddModal(true); setEditingItem(null); setFormData({ title: '', category: 'web', description: '', tags: '', image: '', link: '', featured: false }); }}
+          onClick={() => { setShowAddModal(true); setEditingItem(null); resetForm(); }}
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg font-medium">
           <Plus className="w-5 h-5" /> Add Project
         </motion.button>
@@ -157,11 +221,108 @@ const AdminPortfolioManagement: React.FC = () => {
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Category *</label><select required value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value as PortfolioItem['category'] })} className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500"><option value="web">Web Development</option><option value="design">UI/UX Design</option><option value="mobile">Mobile App</option><option value="branding">Branding</option></select></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Description *</label><textarea required rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Brief description..." /></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Tags (comma-separated) *</label><input type="text" required value={formData.tags} onChange={(e) => setFormData({ ...formData, tags: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="React, Node.js, MongoDB" /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Image URL *</label><input type="url" required value={formData.image} onChange={(e) => setFormData({ ...formData, image: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="https://example.com/image.jpg" />{formData.image && (<div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden"><img src={formData.image} alt="Preview" className="w-full h-full object-cover" /></div>)}</div>
+                
+                {/* Image Upload Section */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Project Image *
+                    <span className="ml-2 text-xs font-normal text-gray-500">(Upload file or paste URL)</span>
+                  </label>
+                  
+                  {/* Toggle between URL and File upload */}
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageUploadMode('url');
+                        if (!formData.image.startsWith('data:image/')) {
+                          setImagePreview(formData.image);
+                        } else {
+                          setImagePreview('');
+                          setFormData({ ...formData, image: '' });
+                        }
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                        imageUploadMode === 'url'
+                          ? 'bg-indigo-600 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <LinkIcon className="w-4 h-4" />
+                      URL
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageUploadMode('file');
+                        if (formData.image.startsWith('data:image/')) {
+                          setImagePreview(formData.image);
+                        } else {
+                          setImagePreview('');
+                          setFormData({ ...formData, image: '' });
+                        }
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                        imageUploadMode === 'file'
+                          ? 'bg-indigo-600 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <Upload className="w-4 h-4" />
+                      Upload File
+                    </button>
+                  </div>
+
+                  {/* URL Input */}
+                  {imageUploadMode === 'url' && (
+                    <input
+                      type="url"
+                      required
+                      value={formData.image.startsWith('data:image/') ? '' : formData.image}
+                      onChange={handleImageUrlChange}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  )}
+
+                  {/* File Upload Input */}
+                  {imageUploadMode === 'file' && (
+                    <div className="space-y-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                      />
+                      <p className="text-xs text-gray-500">
+                        Supported formats: JPG, PNG, GIF, WebP (Max 5MB)
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Image Preview */}
+                  {imagePreview && (
+                    <div className="mt-3 relative group">
+                      <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-lg"
+                        title="Remove image"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Live Demo Link</label><input type="url" value={formData.link} onChange={(e) => setFormData({ ...formData, link: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="https://yourproject.com" /></div>
                 <div className="flex items-center gap-2"><input type="checkbox" id="featured" checked={formData.featured} onChange={(e) => setFormData({ ...formData, featured: e.target.checked })} className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" /><label htmlFor="featured" className="text-sm font-medium text-gray-700">Mark as Featured</label></div>
                 <div className="flex gap-3 pt-4">
-                  <button type="button" onClick={() => { setShowAddModal(false); setEditingItem(null); }} className="flex-1 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50">Cancel</button>
+                  <button type="button" onClick={() => { setShowAddModal(false); setEditingItem(null); resetForm(); }} className="flex-1 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50">Cancel</button>
                   <button type="submit" className="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg hover:from-indigo-700 hover:to-indigo-800">{editingItem ? 'Update' : 'Add'} Project</button>
                 </div>
               </form>
