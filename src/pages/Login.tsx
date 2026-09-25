@@ -27,7 +27,7 @@ const Login: React.FC = () => {
       success = await login(email, password, 'admin');
     } else {
       // Validate client credentials
-      const clientAccount = validateClientCredentials(email, password);
+      const clientAccount = await validateClientCredentials(email, password);
       if (clientAccount) {
         success = await login(email, password, 'client');
       }
