@@ -10,7 +10,20 @@ const getAuthHeaders = () => {
   };
 };
 
-// Generic fetch wrapper with error handling
+// Check if backend is available
+export const isBackendAvailable = async (): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_BASE_URL.replace('/api', '')}/health`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(2000)
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
+
+// Generic fetch wrapper with error handling and fallback
 const apiRequest = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -22,13 +35,20 @@ const apiRequest = async <T>(endpoint: string, options: RequestInit = {}): Promi
     });
 
     if (!response.ok) {
+      if (response.status === 404) {
+        console.warn(`API endpoint not found: ${endpoint}. Backend may not be running.`);
+        throw new Error('Backend server not available');
+      }
       const error = await response.json();
       throw new Error(error.error?.message || 'API request failed');
     }
 
     return await response.json();
   } catch (error) {
-    console.error('API Error:', error);
+    // Don't log 404 errors repeatedly
+    if (!(error instanceof Error && error.message === 'Backend server not available')) {
+      console.error('API Error:', error);
+    }
     throw error;
   }
 };
