@@ -134,16 +134,6 @@ const Login: React.FC = () => {
               )}
             </button>
           </form>
-
-          <div className="mt-6 p-4 bg-indigo-50 rounded-xl">
-            <p className="text-xs text-gray-600">
-              <strong>Demo Credentials:</strong>
-              <br />
-              Admin: admin@osborne.dev / admin123
-              <br />
-              Client: client@demo.com / client123
-            </p>
-          </div>
         </motion.div>
       </div>
     </div>
