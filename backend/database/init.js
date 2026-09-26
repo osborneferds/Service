@@ -2,6 +2,8 @@ import Database from 'better-sqlite3';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync, mkdirSync } from 'fs';
+import bcrypt from 'bcryptjs';
+import { randomUUID } from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -248,12 +250,10 @@ export function seedDefaultData() {
   const adminExists = db.prepare('SELECT id FROM users WHERE email = ?').get(process.env.ADMIN_EMAIL || 'admin@osborne.dev');
   
   if (!adminExists) {
-    const bcrypt = require('bcryptjs');
-    const { v4: uuidv4 } = require('uuid');
-    
+
     // Create admin user
     const adminPassword = bcrypt.hashSync(process.env.ADMIN_PASSWORD || 'admin123', 10);
-    const adminId = uuidv4();
+    const adminId = randomUUID();
     
     db.prepare(`
       INSERT INTO users (id, email, password_hash, name, role, status)
@@ -271,7 +271,7 @@ export function seedDefaultData() {
     
     // Create demo client
     const clientPassword = bcrypt.hashSync('client123', 10);
-    const clientId = uuidv4();
+    const clientId = randomUUID();
     
     db.prepare(`
       INSERT INTO users (id, email, password_hash, name, role, company, phone, status)
@@ -292,7 +292,7 @@ export function seedDefaultData() {
     // Create sample projects
     const projects = [
       {
-        id: uuidv4(),
+        id: randomUUID(),
         client_id: clientId,
         client_name: 'John Smith',
         client_email: 'client@demo.com',
@@ -307,7 +307,7 @@ export function seedDefaultData() {
         notes: 'Client prefers minimalist design with dark mode option'
       },
       {
-        id: uuidv4(),
+        id: randomUUID(),
         client_id: clientId,
         client_name: 'John Smith',
         client_email: 'client@demo.com',
@@ -322,7 +322,7 @@ export function seedDefaultData() {
         notes: 'Waiting for final design approval'
       },
       {
-        id: uuidv4(),
+        id: randomUUID(),
         client_id: clientId,
         client_name: 'John Smith',
         client_email: 'client@demo.com',
@@ -366,7 +366,7 @@ export function seedDefaultData() {
     // Create sample invoices
     const invoices = [
       {
-        id: uuidv4(),
+        id: randomUUID(),
         invoice_number: 'INV-2024-0001',
         client_id: clientId,
         client_name: 'John Smith',
@@ -386,7 +386,7 @@ export function seedDefaultData() {
         notes: 'Thank you for your prompt payment!'
       },
       {
-        id: uuidv4(),
+        id: randomUUID(),
         invoice_number: 'INV-2024-0002',
         client_id: clientId,
         client_name: 'John Smith',
@@ -405,7 +405,7 @@ export function seedDefaultData() {
         notes: 'Payment due within 15 days'
       },
       {
-        id: uuidv4(),
+        id: randomUUID(),
         invoice_number: 'INV-2024-0003',
         client_id: clientId,
         client_name: 'John Smith',
@@ -454,7 +454,7 @@ export function seedDefaultData() {
     console.log('✅ Sample invoices created');
     
     // Create sample conversations and messages
-    const conversationId = uuidv4();
+    const conversationId = randomUUID();
     
     db.prepare(`
       INSERT INTO conversations (id, participant_id, participant_name, participant_email, last_message, last_message_time, unread_count)
@@ -471,7 +471,7 @@ export function seedDefaultData() {
     
     const messages = [
       {
-        id: uuidv4(),
+        id: randomUUID(),
         conversation_id: conversationId,
         sender_id: 'admin',
         sender_name: 'Osborne Fernandes',
@@ -483,7 +483,7 @@ export function seedDefaultData() {
         created_at: '2024-01-25T09:00:00.000Z'
       },
       {
-        id: uuidv4(),
+        id: randomUUID(),
         conversation_id: conversationId,
         sender_id: clientId,
         sender_name: 'John Smith',
@@ -495,7 +495,7 @@ export function seedDefaultData() {
         created_at: '2024-01-25T10:15:00.000Z'
       },
       {
-        id: uuidv4(),
+        id: randomUUID(),
         conversation_id: conversationId,
         sender_id: 'admin',
         sender_name: 'Osborne Fernandes',
