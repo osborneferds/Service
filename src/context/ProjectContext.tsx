@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { projectsAPI, isBackendAvailable } from '../lib/api';
+import { projectsAPI } from '../lib/api';
+import { useAuth } from './AuthContext';
 
 export interface Project {
   id: string;
@@ -79,6 +80,7 @@ const sampleProjects: Project[] = [
 ];
 
 export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [backendAvailable, setBackendAvailable] = useState(false);
@@ -100,8 +102,13 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   });
 
   useEffect(() => {
-    loadProjects();
-  }, []);
+    if (user) loadProjects();
+    else {
+      setProjects([]);
+      setBackendAvailable(false);
+      setLoading(false);
+    }
+  }, [user?.id]);
 
   const loadProjects = async () => {
     setLoading(true);
