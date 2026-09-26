@@ -69,7 +69,7 @@ export const authAPI = {
       body: JSON.stringify({ currentPassword, newPassword })
     }),
   
-  updateProfile: (profile: { name: string; email: string; phone?: string; company?: string }) =>
+  updateProfile: (profile: { name: string; email: string; phone?: string; company?: string; website?: string; bio?: string }) =>
     apiRequest<any>('/auth/profile', {
       method: 'PUT',
       body: JSON.stringify(profile)
