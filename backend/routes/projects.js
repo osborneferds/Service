@@ -182,9 +182,17 @@ router.post('/', authenticateToken, requireRole('admin'), [
   const { client_name, client_email, title, description, budget, timeline, category, priority = 'medium', progress = 0, notes } = req.body;
 
   try {
-    // Verify client exists
-    const client = db.prepare('SELECT id FROM users WHERE email = ? AND role = ?').get(client_email, 'client');
-    
+    // Projects must belong to a real client account so the client can authenticate and see them.
+    const client = db.prepare('SELECT id FROM users WHERE email = ? AND role = ? AND status = ?').get(client_email, 'client', 'active');
+    if (!client) {
+      return res.status(400).json({
+        error: {
+          message: 'No active client account exists for this email. Create the client account first, then create the project.',
+          code: 'CLIENT_ACCOUNT_REQUIRED'
+        }
+      });
+    }
+
     const projectId = uuidv4();
 
     db.prepare(`
@@ -192,7 +200,7 @@ router.post('/', authenticateToken, requireRole('admin'), [
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       projectId,
-      client ? client.id : null,
+      client.id,
       client_name,
       client_email,
       title,
@@ -220,7 +228,6 @@ router.post('/', authenticateToken, requireRole('admin'), [
     );
 
     // Create notification for client
-    if (client) {
       db.prepare(`
         INSERT INTO notifications (id, user_id, type, title, message, link)
         VALUES (?, ?, ?, ?, ?, ?)
