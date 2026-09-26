@@ -69,6 +69,12 @@ export const authAPI = {
       body: JSON.stringify({ currentPassword, newPassword })
     }),
   
+  updateProfile: (profile: { name: string; email: string; phone?: string; company?: string }) =>
+    apiRequest<any>('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(profile)
+    }),
+  
   logout: () => apiRequest<{ message: string }>('/auth/logout', {
     method: 'POST'
   })
