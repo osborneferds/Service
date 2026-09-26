@@ -51,6 +51,12 @@ export function initializeDatabase() {
     )
   `);
 
+  // Backward-compatible migration for databases created before the notes field existed.
+  const userColumns = db.prepare('PRAGMA table_info(users)').all();
+  if (!userColumns.some((column) => column.name === 'notes')) {
+    db.exec('ALTER TABLE users ADD COLUMN notes TEXT');
+  }
+
   // Create projects table
   db.exec(`
     CREATE TABLE IF NOT EXISTS projects (
