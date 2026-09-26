@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Trash2, X, Search, Eye, EyeOff, Shield } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Search, KeyRound, Shield } from 'lucide-react';
 import { useClientAccounts, ClientAccount } from '../../context/ClientAccountsContext';
 import { useToast } from '../../context/ToastContext';
 import ConfirmDialog from '../../components/ConfirmDialog';
@@ -11,7 +11,6 @@ const AdminClientAccounts: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingAccount, setEditingAccount] = useState<ClientAccount | null>(null);
-  const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
   const [deletingAccount, setDeletingAccount] = useState<ClientAccount | null>(null);
 
   const [formData, setFormData] = useState({
@@ -98,7 +97,6 @@ const AdminClientAccounts: React.FC = () => {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Password</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
@@ -116,19 +114,31 @@ const AdminClientAccounts: React.FC = () => {
                   </td>
                   <td className="px-6 py-4"><div className="flex items-center gap-2 text-sm text-gray-700">{account.email}</div></td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <code className="text-sm text-gray-700 font-mono">{showPassword[account.id] ? 'Password is stored securely on the server' : '••••••••'}</code>
-                      <button onClick={() => setShowPassword(prev => ({ ...prev, [account.id]: !prev[account.id] }))} className="text-xs text-indigo-600 hover:text-indigo-700 font-medium">
-                        {showPassword[account.id] ? 'Hide' : 'Show'}
-                      </button>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${account.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{account.status}</span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <button onClick={() => openEditModal(account)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 className="w-4 h-4" /></button>
+                      <button
+                        onClick={async () => {
+                          const newPassword = window.prompt('Enter a new password for this client (minimum 8 characters):');
+                          if (!newPassword) return;
+                          if (newPassword.length < 8) {
+                            addToast('Password must be at least 8 characters.', 'error');
+                            return;
+                          }
+                          try {
+                            await updateClientAccount(account.id, { password: newPassword });
+                            addToast('Client password reset successfully.', 'success');
+                          } catch (error: any) {
+                            addToast(error?.message || 'Unable to reset password.', 'error');
+                          }
+                        }}
+                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg"
+                        title="Reset password"
+                      >
+                        <KeyRound className="w-4 h-4" />
+                      </button>
                       <button onClick={() => setDeletingAccount(account)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </td>
