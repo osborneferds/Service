@@ -25,18 +25,22 @@ const AdminClientAccounts: React.FC = () => {
     account.company.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingAccount) {
-      updateClientAccount(editingAccount.id, formData);
-      addToast('Account updated!', 'success');
-      setEditingAccount(null);
-    } else {
-      addClientAccount(formData);
-      addToast('Account created!', 'success');
+    try {
+      if (editingAccount) {
+        await updateClientAccount(editingAccount.id, formData);
+        addToast('Account updated!', 'success');
+        setEditingAccount(null);
+      } else {
+        await addClientAccount(formData);
+        addToast('Account created!', 'success');
+      }
+      setShowAddModal(false);
+      setFormData({ email: '', password: '', name: '', company: '', phone: '', status: 'active', notes: '' });
+    } catch (error: any) {
+      addToast(error?.message || 'Unable to save account', 'error');
     }
-    setShowAddModal(false);
-    setFormData({ email: '', password: '', name: '', company: '', phone: '', status: 'active', notes: '' });
   };
 
   const openEditModal = (account: ClientAccount) => {
