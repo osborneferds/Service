@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, User, Mail, Phone, Building, Globe, CheckCircle } from 'lucide-react';
+import { Save, User, Mail, Phone, Building, Globe, CheckCircle, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { authAPI } from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
 
 const AdminSettings: React.FC = () => {
@@ -9,6 +10,12 @@ const AdminSettings: React.FC = () => {
   const { addToast } = useToast();
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -53,6 +60,34 @@ const AdminSettings: React.FC = () => {
       document.documentElement.classList.remove('dark');
     }
   }, [formData.darkMode]);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordMessage('');
+
+    if (passwordData.newPassword.length < 8) {
+      setPasswordMessage('New password must be at least 8 characters.');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordMessage('New passwords do not match.');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      await authAPI.changePassword(passwordData.currentPassword, passwordData.newPassword);
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPasswordMessage('Password changed successfully.');
+      addToast('Password changed successfully!', 'success');
+    } catch (error: any) {
+      setPasswordMessage(error?.message || 'Unable to change password.');
+      addToast(error?.message || 'Unable to change password', 'error');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,6 +168,22 @@ const AdminSettings: React.FC = () => {
           </div>
         </div>
 
+        <form onSubmit={handleChangePassword} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2"><Lock className="w-5 h-5" />Change Password</h2>
+          <p className="text-sm text-gray-500 mb-6">Change the password for your current account. The new password is stored securely on the server.</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <PasswordField label="Current Password" value={passwordData.currentPassword} onChange={(value) => setPasswordData({ ...passwordData, currentPassword: value })} show={showCurrentPassword} toggle={() => setShowCurrentPassword(!showCurrentPassword)} />
+            <PasswordField label="New Password" value={passwordData.newPassword} onChange={(value) => setPasswordData({ ...passwordData, newPassword: value })} show={showNewPassword} toggle={() => setShowNewPassword(!showNewPassword)} />
+            <PasswordField label="Confirm New Password" value={passwordData.confirmPassword} onChange={(value) => setPasswordData({ ...passwordData, confirmPassword: value })} show={showConfirmPassword} toggle={() => setShowConfirmPassword(!showConfirmPassword)} />
+          </div>
+          {passwordMessage && <p className={`mt-4 text-sm ${passwordMessage.includes('successfully') ? 'text-green-600' : 'text-red-600'}`}>{passwordMessage}</p>}
+          <div className="flex justify-end mt-6">
+            <button type="submit" disabled={passwordLoading} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50">
+              {passwordLoading ? 'Changing...' : 'Change Password'}
+            </button>
+          </div>
+        </form>
+
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900 mb-6">Preferences</h2>
           <div className="space-y-4">
@@ -170,5 +221,19 @@ const AdminSettings: React.FC = () => {
     </div>
   );
 };
+
+const PasswordField: React.FC<{ label: string; value: string; onChange: (value: string) => void; show: boolean; toggle: () => void }> = ({ label, value, onChange, show, toggle }) => (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+    <div className="relative">
+      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <input type={show ? 'text' : 'password'} required value={value} onChange={(e) => onChange(e.target.value)}
+        className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+      <button type="button" onClick={toggle} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+        {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+      </button>
+    </div>
+  </div>
+);
 
 export default AdminSettings;
