@@ -83,120 +83,98 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [loading, setLoading] = useState(true);
   const [backendAvailable, setBackendAvailable] = useState(false);
 
-  // Load projects on mount
+  const mapProject = (p: any): Project => ({
+    id: p.id,
+    clientName: p.clientName ?? p.client_name ?? '',
+    clientEmail: p.clientEmail ?? p.client_email ?? '',
+    title: p.title,
+    description: p.description,
+    budget: p.budget,
+    timeline: p.timeline,
+    status: p.status,
+    category: p.category,
+    priority: p.priority,
+    progress: Number(p.progress ?? 0),
+    notes: p.notes ?? undefined,
+    createdAt: p.createdAt ?? p.created_at ?? new Date().toISOString(),
+  });
+
   useEffect(() => {
     loadProjects();
   }, []);
 
   const loadProjects = async () => {
     setLoading(true);
-    
-    // Check if backend is available
-    const available = await isBackendAvailable();
-    setBackendAvailable(available);
-    
-    if (available) {
-      try {
-        const data = await projectsAPI.getAll();
-        setProjects(data.projects || []);
-      } catch (error) {
-        console.error('Failed to load projects from API, using localStorage');
-        loadFromLocalStorage();
-      }
-    } else {
-      console.log('Backend not available, using localStorage');
-      loadFromLocalStorage();
-    }
-    
-    setLoading(false);
-  };
-
-  const loadFromLocalStorage = () => {
-    const stored = localStorage.getItem('freelancer_projects');
-    if (stored) {
-      try {
-        setProjects(JSON.parse(stored));
-      } catch (error) {
-        console.error('Failed to parse projects from localStorage');
-        setProjects(sampleProjects);
-      }
-    } else {
-      // Use sample projects if nothing in localStorage
-      setProjects(sampleProjects);
-      localStorage.setItem('freelancer_projects', JSON.stringify(sampleProjects));
-    }
-  };
-
-  const saveProjects = async (updatedProjects: Project[]) => {
-    setProjects(updatedProjects);
-    localStorage.setItem('freelancer_projects', JSON.stringify(updatedProjects));
-    
-    // Sync with backend if available
-    if (backendAvailable) {
-      try {
-        // This would require batch update API endpoint
-        // For now, we just keep localStorage in sync
-      } catch (error) {
-        console.error('Failed to sync with backend');
-      }
+    try {
+      const data = await projectsAPI.getAll();
+      setBackendAvailable(true);
+      setProjects((data.projects || []).map(mapProject));
+    } catch (error) {
+      setBackendAvailable(false);
+      console.error('Failed to load projects from backend:', error);
+      setProjects([]);
+    } finally {
+      setLoading(false);
     }
   };
 
   const addProject = async (project: Omit<Project, 'id' | 'createdAt'>) => {
-    const newProject: Project = {
-      ...project,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-    };
-    
-    if (backendAvailable) {
-      try {
-        const created = await projectsAPI.create(project);
-        setProjects([...projects, created]);
-      } catch (error) {
-        console.error('Failed to add project via API, using localStorage');
-        await saveProjects([...projects, newProject]);
-      }
-    } else {
-      await saveProjects([...projects, newProject]);
+    try {
+      const created = await projectsAPI.create({
+        client_name: project.clientName,
+        client_email: project.clientEmail,
+        title: project.title,
+        description: project.description,
+        budget: project.budget,
+        timeline: project.timeline,
+        status: project.status,
+        category: project.category,
+        priority: project.priority,
+        progress: project.progress,
+        notes: project.notes,
+      });
+      setProjects(prev => [mapProject(created), ...prev]);
+    } catch (error) {
+      console.error('Failed to create project in backend:', error);
+      throw error;
     }
   };
 
   const updateProject = async (id: string, updates: Partial<Project>) => {
-    const updated = projects.map(p => p.id === id ? { ...p, ...updates } : p);
-    
-    if (backendAvailable) {
-      try {
-        await projectsAPI.update(id, updates);
-        setProjects(updated);
-      } catch (error) {
-        console.error('Failed to update project via API, using localStorage');
-        await saveProjects(updated);
-      }
-    } else {
-      await saveProjects(updated);
+    const payload: any = {};
+    if (updates.clientName !== undefined) payload.client_name = updates.clientName;
+    if (updates.clientEmail !== undefined) payload.client_email = updates.clientEmail;
+    if (updates.title !== undefined) payload.title = updates.title;
+    if (updates.description !== undefined) payload.description = updates.description;
+    if (updates.budget !== undefined) payload.budget = updates.budget;
+    if (updates.timeline !== undefined) payload.timeline = updates.timeline;
+    if (updates.status !== undefined) payload.status = updates.status;
+    if (updates.category !== undefined) payload.category = updates.category;
+    if (updates.priority !== undefined) payload.priority = updates.priority;
+    if (updates.progress !== undefined) payload.progress = updates.progress;
+    if (updates.notes !== undefined) payload.notes = updates.notes;
+
+    try {
+      const updated = await projectsAPI.update(id, payload);
+      setProjects(prev => prev.map(p => p.id === id ? mapProject(updated) : p));
+    } catch (error) {
+      console.error('Failed to update project in backend:', error);
+      throw error;
     }
   };
 
   const deleteProject = async (id: string) => {
-    const filtered = projects.filter(p => p.id !== id);
-    
-    if (backendAvailable) {
-      try {
-        await projectsAPI.delete(id);
-        setProjects(filtered);
-      } catch (error) {
-        console.error('Failed to delete project via API, using localStorage');
-        await saveProjects(filtered);
-      }
-    } else {
-      await saveProjects(filtered);
+    try {
+      await projectsAPI.delete(id);
+      setProjects(prev => prev.filter(p => p.id !== id));
+    } catch (error) {
+      console.error('Failed to delete project in backend:', error);
+      throw error;
     }
   };
 
-  const getProjectsByClient = (email: string) => {
-    return projects.filter(p => p.clientEmail === email);
-  };
+  const getProjectsByClient = (email: string) =>
+    projects.filter(p => p.clientEmail.toLowerCase() === email.toLowerCase());
 
   return (
     <ProjectContext.Provider value={{
