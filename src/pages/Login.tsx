@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Lock, Mail, Eye, EyeOff, Shield, User, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useClientAccounts } from '../context/ClientAccountsContext';
 import { useToast } from '../context/ToastContext';
 
 const Login: React.FC = () => {
@@ -13,7 +12,6 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
-  const { validateClientCredentials } = useClientAccounts();
   const { addToast } = useToast();
   const navigate = useNavigate();
 
@@ -23,15 +21,7 @@ const Login: React.FC = () => {
     
     let success = false;
     
-    if (activeTab === 'admin') {
-      success = await login(email, password, 'admin');
-    } else {
-      // Validate client credentials
-      const clientAccount = await validateClientCredentials(email, password);
-      if (clientAccount) {
-        success = await login(email, password, 'client');
-      }
-    }
+    success = await login(email, password, activeTab);
     
     if (success) {
       addToast('Login successful!', 'success');
