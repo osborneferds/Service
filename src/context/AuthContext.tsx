@@ -1,10 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { authAPI } from '../lib/api';
 
 interface User {
   id: string;
   name: string;
   email: string;
   role: 'admin' | 'client';
+  company?: string;
+  phone?: string;
 }
 
 interface AuthContextType {
@@ -20,48 +23,47 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem('authUser');
-    if (stored) {
+    const restoreSession = async () => {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        localStorage.removeItem('authUser');
+        return;
+      }
+
       try {
-        setUser(JSON.parse(stored));
-      } catch (error) {
+        const currentUser = await authAPI.getMe();
+        setUser(currentUser);
+        localStorage.setItem('authUser', JSON.stringify(currentUser));
+      } catch {
+        localStorage.removeItem('authToken');
         localStorage.removeItem('authUser');
       }
-    }
+    };
+
+    restoreSession();
   }, []);
 
   const login = async (email: string, password: string, role: 'admin' | 'client'): Promise<boolean> => {
-    // Admin credentials
-    if (role === 'admin' && email === 'admin@osborne.dev' && password === 'admin123') {
-      const adminUser: User = { id: '1', name: 'Osborne Fernandes', email, role: 'admin' };
-      setUser(adminUser);
-      localStorage.setItem('authUser', JSON.stringify(adminUser));
-      return true;
-    }
-    
-    // Client credentials (from localStorage)
-    if (role === 'client') {
-      try {
-        const accounts = JSON.parse(localStorage.getItem('freelancer_client_accounts') || '[]');
-        const account = accounts.find((acc: any) => acc.email === email && acc.password === password && acc.status === 'active');
-        
-        if (account) {
-          const clientUser: User = { id: account.id, name: account.name, email: account.email, role: 'client' };
-          setUser(clientUser);
-          localStorage.setItem('authUser', JSON.stringify(clientUser));
-          return true;
-        }
-      } catch (error) {
-        console.error('Login error:', error);
+    try {
+      const response = await authAPI.login(email, password);
+      if (!response?.token || !response?.user || response.user.role !== role) {
+        return false;
       }
+
+      localStorage.setItem('authToken', response.token);
+      localStorage.setItem('authUser', JSON.stringify(response.user));
+      setUser(response.user);
+      return true;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-    
-    return false;
   };
 
   const logout = () => {
-    setUser(null);
+    localStorage.removeItem('authToken');
     localStorage.removeItem('authUser');
+    setUser(null);
   };
 
   return (
