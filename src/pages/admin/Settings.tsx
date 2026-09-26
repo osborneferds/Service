@@ -6,7 +6,7 @@ import { authAPI } from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
 
 const AdminSettings: React.FC = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { addToast } = useToast();
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -29,28 +29,24 @@ const AdminSettings: React.FC = () => {
   });
 
   useEffect(() => {
-    const loadSettings = () => {
-      try {
-        const savedSettings = localStorage.getItem('user_settings');
-        if (savedSettings) {
-          const parsed = JSON.parse(savedSettings);
-          setFormData({
-            name: parsed.name || user?.name || '',
-            email: parsed.email || user?.email || '',
-            phone: parsed.phone || '',
-            company: parsed.company || '',
-            website: parsed.website || '',
-            bio: parsed.bio || '',
-            notifications: parsed.notifications !== undefined ? parsed.notifications : true,
-            darkMode: parsed.darkMode !== undefined ? parsed.darkMode : false,
-            autoSave: parsed.autoSave !== undefined ? parsed.autoSave : true
-          });
-        }
-      } catch (error) {
-        console.error('Failed to load settings:', error);
-      }
-    };
-    loadSettings();
+    let parsed: any = {};
+    try {
+      const savedSettings = localStorage.getItem('user_settings');
+      if (savedSettings) parsed = JSON.parse(savedSettings);
+    } catch (error) {
+      console.error('Failed to load preferences:', error);
+    }
+    setFormData({
+      name: user?.name || '',
+      email: user?.email || '',
+      phone: user?.phone || '',
+      company: user?.company || '',
+      website: user?.website || '',
+      bio: user?.bio || '',
+      notifications: parsed.notifications !== undefined ? parsed.notifications : true,
+      darkMode: parsed.darkMode !== undefined ? parsed.darkMode : false,
+      autoSave: parsed.autoSave !== undefined ? parsed.autoSave : true
+    });
   }, [user]);
 
   useEffect(() => {
@@ -93,23 +89,26 @@ const AdminSettings: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      localStorage.setItem('user_settings', JSON.stringify(formData));
-      const storedUser = localStorage.getItem('authUser');
-      if (storedUser) {
-        const userData = JSON.parse(storedUser);
-        if (formData.name !== userData.name || formData.email !== userData.email) {
-          userData.name = formData.name;
-          userData.email = formData.email;
-          localStorage.setItem('authUser', JSON.stringify(userData));
-        }
-      }
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const updatedUser = await authAPI.updateProfile({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        company: formData.company,
+        website: formData.website,
+        bio: formData.bio
+      });
+      updateUser(updatedUser);
+      localStorage.setItem('user_settings', JSON.stringify({
+        notifications: formData.notifications,
+        darkMode: formData.darkMode,
+        autoSave: formData.autoSave
+      }));
       setSaved(true);
       addToast('Settings saved successfully!', 'success');
       setTimeout(() => setSaved(false), 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save settings:', error);
-      addToast('Failed to save settings', 'error');
+      addToast(error?.message || 'Failed to save settings', 'error');
     } finally {
       setLoading(false);
     }
