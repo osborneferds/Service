@@ -1,0 +1,1 @@
+# Osborne Freelance API\n\nExpress + SQLite backend. SQLite uses WAL mode and should be stored on a Railway persistent volume mounted at `/data`.\n\nRequired variables: `JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CORS_ORIGIN`, `DB_PATH=/data/freelance.db`.\n
