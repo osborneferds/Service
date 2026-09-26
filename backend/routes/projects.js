@@ -228,7 +228,7 @@ router.post('/', authenticateToken, requireRole('admin'), [
     );
 
     // Create notification for client
-      db.prepare(`
+    db.prepare(`
         INSERT INTO notifications (id, user_id, type, title, message, link)
         VALUES (?, ?, ?, ?, ?, ?)
       `).run(
@@ -239,7 +239,6 @@ router.post('/', authenticateToken, requireRole('admin'), [
         `You have been assigned a new project: ${title}`,
         `/client-portal/projects/${projectId}`
       );
-    }
 
     const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
 
