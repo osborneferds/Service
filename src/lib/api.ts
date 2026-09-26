@@ -339,5 +339,5 @@ export const uploadsAPI = {
 
 // Health Check
 export const healthAPI = {
-  check: () => apiRequest<{ status: string; timestamp: string; uptime: number }>('/health')
+  check: async () => {\n    const response = await fetch(`${API_BASE_URL.replace('/api', '')}/health`);\n    if (!response.ok) throw new Error('Backend health check failed');\n    return response.json() as Promise<{ status: string; timestamp: string; uptime: number }>;\n  }
 };
