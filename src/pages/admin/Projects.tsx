@@ -32,18 +32,22 @@ const AdminProjects: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingProject) {
-      updateProject(editingProject.id, formData);
-      addToast('Project updated!', 'success');
-      setEditingProject(null);
-    } else {
-      addProject(formData);
-      addToast('Project added!', 'success');
+    try {
+      if (editingProject) {
+        await updateProject(editingProject.id, formData);
+        addToast('Project updated!', 'success');
+        setEditingProject(null);
+      } else {
+        await addProject(formData);
+        addToast('Project added!', 'success');
+      }
+      setShowAddModal(false);
+      setFormData({ clientName: '', clientEmail: '', title: '', description: '', budget: '', timeline: '', category: '', priority: 'medium', status: 'pending', progress: 0, notes: '' });
+    } catch (error: any) {
+      addToast(error?.message || 'Unable to save project', 'error');
     }
-    setShowAddModal(false);
-    setFormData({ clientName: '', clientEmail: '', title: '', description: '', budget: '', timeline: '', category: '', priority: 'medium', status: 'pending', progress: 0, notes: '' });
   };
 
   const openEditModal = (project: Project) => {
