@@ -118,7 +118,7 @@ const AdminSettings: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+        <div className="flex items-center gap-3"><h1 className="text-3xl font-bold text-gray-900">Settings</h1><span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-700">Account & Security</span></div>
         <p className="text-gray-600 mt-1">Manage your account and preferences</p>
       </div>
 
@@ -131,7 +131,7 @@ const AdminSettings: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <form onSubmit={handleSave} className="space-y-6">
+      <div className="space-y-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900 mb-6">Profile Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -217,7 +217,7 @@ const AdminSettings: React.FC = () => {
             {loading ? (<><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving...</>) : (<><Save className="w-5 h-5" />Save Changes</>)}
           </motion.button>
         </div>
-      </form>
+      </div>
     </div>
   );
 };
