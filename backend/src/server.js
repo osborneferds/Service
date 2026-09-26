@@ -8,7 +8,7 @@ import multer from "multer";
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-const PORT=Number(process.env.PORT||3001),DB_PATH=process.env.DB_PATH||"/data/freelance.db",JWT_SECRET=process.env.JWT_SECRET||"CHANGE_ME_IN_RAILWAY",CORS_ORIGIN=process.env.CORS_ORIGIN||"*",ADMIN_EMAIL=process.env.ADMIN_EMAIL||"admin@osbornefernandes.design",ADMIN_PASSWORD=process.env.ADMIN_PASSWORD||"ChangeMeNow!";
+const PORT=Number(process.env.PORT||3001),DB_PATH=process.env.DATABASE_PATH||process.env.DB_PATH||"/data/freelance.db",JWT_SECRET=process.env.JWT_SECRET||"CHANGE_ME_IN_RAILWAY",CORS_ORIGIN=process.env.CORS_ORIGIN||"*",ADMIN_EMAIL=process.env.ADMIN_EMAIL||"admin@osbornefernandes.design",ADMIN_PASSWORD=process.env.ADMIN_PASSWORD||"ChangeMeNow!";
 fs.mkdirSync(path.dirname(DB_PATH),{recursive:true}); const uploadDir=path.join(path.dirname(DB_PATH),"uploads"); fs.mkdirSync(uploadDir,{recursive:true});
 const db=new Database(DB_PATH); db.pragma("journal_mode=WAL"); db.pragma("foreign_keys=ON");
 db.exec(`CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,email TEXT UNIQUE NOT NULL,password_hash TEXT NOT NULL,name TEXT NOT NULL,role TEXT NOT NULL,status TEXT DEFAULT 'active',created_at TEXT NOT NULL);
@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS messages(id TEXT PRIMARY KEY,conversation_id TEXT NOT
 CREATE TABLE IF NOT EXISTS notifications(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,title TEXT NOT NULL,message TEXT DEFAULT '',type TEXT DEFAULT 'info',read_at TEXT,created_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS client_accounts(id TEXT PRIMARY KEY,user_id TEXT UNIQUE NOT NULL,company TEXT DEFAULT '',phone TEXT DEFAULT '',notes TEXT DEFAULT '',created_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS uploads(id TEXT PRIMARY KEY,user_id TEXT,filename TEXT NOT NULL,original_name TEXT NOT NULL,mime_type TEXT,size INTEGER,created_at TEXT NOT NULL);`);
-const now=()=>new Date().toISOString(),id=()=>randomUUID(),pub=u=>({id:u.id,email:u.email,name:u.name,role:u.role,status:u.status,created_at:u.created_at}),tok=u=>jwt.sign({sub:u.id,role:u.role,email:u.email},JWT_SECRET,{expiresIn:"7d"});
+const addColumn=(table,column,definition)=>{const cols=db.prepare("PRAGMA table_info("+table+")").all();if(!cols.some(c=>c.name===column))db.exec("ALTER TABLE "+table+" ADD COLUMN "+column+" "+definition)}; addColumn("users","company","TEXT"); addColumn("users","phone","TEXT"); addColumn("users","notes","TEXT"); addColumn("projects","client_name","TEXT"); addColumn("projects","client_email","TEXT"); addColumn("projects","timeline","TEXT"); addColumn("projects","notes","TEXT");
+const now=()=>new Date().toISOString(),id=()=>randomUUID(),pub=u=>({id:u.id,email:u.email,name:u.name,role:u.role,status:u.status,company:u.company||"",phone:u.phone||"",created_at:u.created_at}),tok=u=>jwt.sign({sub:u.id,role:u.role,email:u.email},JWT_SECRET,{expiresIn:"7d"});
 const app=express(); app.use(helmet({crossOriginResourcePolicy:false})); app.use(cors({origin:CORS_ORIGIN==="*" ? true : CORS_ORIGIN.split(",").map(s=>s.trim())})); app.use(express.json({limit:"2mb"}));
 const auth=(req,res,next)=>{const h=req.headers.authorization||"";if(!h.startsWith("Bearer "))return res.status(401).json({error:{message:"Authentication required"}});try{req.user=jwt.verify(h.slice(7),JWT_SECRET);next()}catch{return res.status(401).json({error:{message:"Invalid or expired token"}})}};
 const admin=(req,res,next)=>["admin","staff"].includes(req.user?.role)?next():res.status(403).json({error:{message:"Admin access required"}});
