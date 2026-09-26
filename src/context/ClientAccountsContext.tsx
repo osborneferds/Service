@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { clientAccountsAPI } from '../lib/api';
+import { useAuth } from './AuthContext';
 
 export interface ClientAccount {
   id: string;
@@ -25,6 +26,7 @@ interface ClientAccountsContextType {
 const ClientAccountsContext = createContext<ClientAccountsContextType | undefined>(undefined);
 
 export const ClientAccountsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [clientAccounts, setClientAccounts] = useState<ClientAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [backendAvailable, setBackendAvailable] = useState(false);
@@ -56,8 +58,13 @@ export const ClientAccountsProvider: React.FC<{ children: ReactNode }> = ({ chil
   };
 
   useEffect(() => {
-    loadAccounts();
-  }, []);
+    if (user && (user.role === 'admin' || user.role === 'staff')) loadAccounts();
+    else {
+      setClientAccounts([]);
+      setBackendAvailable(false);
+      setLoading(false);
+    }
+  }, [user?.id, user?.role]);
 
   const addClientAccount = async (account: Omit<ClientAccount, 'id' | 'createdAt'>) => {
     if (!account.password) throw new Error('Password is required');
