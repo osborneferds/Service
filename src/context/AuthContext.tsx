@@ -8,6 +8,8 @@ interface User {
   role: 'admin' | 'client';
   company?: string;
   phone?: string;
+  website?: string;
+  bio?: string;
 }
 
 interface AuthContextType {
