@@ -32,7 +32,8 @@ const loginGuard=(req,res,next)=>{const key=String(req.ip||"unknown");const nowM
 const passwordValid=p=>typeof p==="string"&&p.length>=8;
 const auth=(req,res,next)=>{const h=req.headers.authorization||"";if(!h.startsWith("Bearer "))return res.status(401).json({error:{message:"Authentication required"}});try{req.user=jwt.verify(h.slice(7),JWT_SECRET);next()}catch{return res.status(401).json({error:{message:"Invalid or expired token"}})}};
 const admin=(req,res,next)=>["admin","staff"].includes(req.user?.role)?next():res.status(403).json({error:{message:"Admin access required"}});
-app.get("/health",(req,res)=>res.json({status:"ok",timestamp:now(),uptime:process.uptime()}));
+app.get("/health",(req,res)=>res.status(200).json({status:"ok",timestamp:now(),uptime:Math.round(process.uptime())}));
+app.get("/ready",(req,res)=>{try{db.prepare("SELECT 1").get();res.json({status:"ready"})}catch{res.status(503).json({status:"not_ready"})}});
 app.post("/api/auth/login",loginGuard,(req,res)=>{const key=String(req.ip||"unknown"),entry=loginAttempts.get(key)||{started:Date.now(),count:0};entry.count++;loginAttempts.set(key,entry);const u=db.prepare("SELECT * FROM users WHERE lower(email)=lower(?) AND status='active'").get(req.body?.email||"");if(!u||!bcrypt.compareSync(req.body?.password||"",u.password_hash))return res.status(401).json({error:{message:"Invalid email or password"}});loginAttempts.delete(key);res.json({token:tok(u),user:pub(u)})});
 app.get("/api/auth/me",auth,(req,res)=>{const u=db.prepare("SELECT * FROM users WHERE id=?").get(req.user.sub);u?res.json(pub(u)):res.status(404).json({error:{message:"User not found"}})});
 app.post("/api/auth/logout",auth,(req,res)=>res.json({message:"Logged out"}));
