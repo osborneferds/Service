@@ -42,7 +42,7 @@ const AdminClientAccounts: React.FC = () => {
   const openEditModal = (account: ClientAccount) => {
     setEditingAccount(account);
     setFormData({
-      email: account.email, password: account.password, name: account.name,
+      email: account.email, password: '', name: account.name,
       company: account.company, phone: account.phone, status: account.status, notes: account.notes || ''
     });
     setShowAddModal(true);
@@ -113,7 +113,7 @@ const AdminClientAccounts: React.FC = () => {
                   <td className="px-6 py-4"><div className="flex items-center gap-2 text-sm text-gray-700">{account.email}</div></td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <code className="text-sm text-gray-700 font-mono">{showPassword[account.id] ? account.password : '••••••••'}</code>
+                      <code className="text-sm text-gray-700 font-mono">{showPassword[account.id] ? 'Password is stored securely on the server' : '••••••••'}</code>
                       <button onClick={() => setShowPassword(prev => ({ ...prev, [account.id]: !prev[account.id] }))} className="text-xs text-indigo-600 hover:text-indigo-700 font-medium">
                         {showPassword[account.id] ? 'Hide' : 'Show'}
                       </button>
@@ -152,7 +152,7 @@ const AdminClientAccounts: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
                     <div className="flex gap-2">
-                      <input type="text" required value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono" placeholder="Password" />
+                      <input type="text" required={!editingAccount} value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono" placeholder={editingAccount ? "Leave blank to keep current password" : "Password"} />
                       <button type="button" onClick={generatePassword} className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 text-sm font-medium">Generate</button>
                     </div>
                   </div>
